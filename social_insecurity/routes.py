@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flask import current_app as app
 from flask import flash, redirect, render_template, send_from_directory, url_for
+from markupsafe import escape
 
 from social_insecurity import sqlite
 from social_insecurity.forms import CommentsForm, FriendsForm, IndexForm, PostForm, ProfileForm
@@ -80,7 +81,9 @@ def stream(username: str):
             VALUES (?, ?, ?, CURRENT_TIMESTAMP);
             """
         image_filename = post_form.image.data.filename if post_form.image.data else None
-        sqlite.query(insert_post, user["id"], post_form.content.data, image_filename)
+        # Sanitize user input to prevent XSS
+        sanitized_content = escape(post_form.content.data) if post_form.content.data else None
+        sqlite.query(insert_post, user["id"], sanitized_content, image_filename)
         return redirect(url_for("stream", username=username))
 
     get_posts = """
@@ -114,7 +117,9 @@ def comments(username: str, post_id: int):
             INSERT INTO Comments (p_id, u_id, comment, creation_time)
             VALUES (?, ?, ?, CURRENT_TIMESTAMP);
             """
-        sqlite.query(insert_comment, post_id, user["id"], comments_form.comment.data)
+        # Sanitize user input to prevent XSS
+        sanitized_comment = escape(comments_form.comment.data) if comments_form.comment.data else None
+        sqlite.query(insert_comment, post_id, user["id"], sanitized_comment)
 
     get_post = """
         SELECT *
@@ -209,14 +214,15 @@ def profile(username: str):
             SET education=?, employment=?, music=?, movie=?, nationality=?, birthday=?
             WHERE username=?;
             """
+        # Sanitize user input to prevent XSS
         sqlite.query(
             update_profile,
-            profile_form.education.data,
-            profile_form.employment.data,
-            profile_form.music.data,
-            profile_form.movie.data,
-            profile_form.nationality.data,
-            profile_form.birthday.data,
+            escape(profile_form.education.data) if profile_form.education.data else None,
+            escape(profile_form.employment.data) if profile_form.employment.data else None,
+            escape(profile_form.music.data) if profile_form.music.data else None,
+            escape(profile_form.movie.data) if profile_form.movie.data else None,
+            escape(profile_form.nationality.data) if profile_form.nationality.data else None,
+            profile_form.birthday.data, 
             username
         )
         return redirect(url_for("profile", username=username))

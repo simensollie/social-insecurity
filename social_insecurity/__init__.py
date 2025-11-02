@@ -32,6 +32,9 @@ def create_app(test_config=None) -> Flask:
     if test_config:
         app.config.from_object(test_config)
 
+    # Ensure Jinja2 auto-escaping is enabled (default, but explicit for clarity)
+    app.jinja_env.autoescape = True
+
     sqlite.init_app(app, schema="schema.sql")
     # login.init_app(app)
     # bcrypt.init_app(app)
