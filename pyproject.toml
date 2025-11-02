@@ -10,6 +10,7 @@ readme = "README.md"
 python = "^3.9"
 Flask = {extras = ["dotenv"], version = "^3.0.0"}
 Flask-WTF = "^1.2.0"
+Flask-Login = "^0.6.3"
 pytest = "^8.0.0"
 
 [tool.poetry.group.dev.dependencies]

@@ -14,7 +14,7 @@ Example:
 """
 
 import os
-
+from datetime import timedelta
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "secret"  # TODO: Use this with wtforms
@@ -22,3 +22,8 @@ class Config:
     UPLOADS_FOLDER_PATH = "uploads"  # Path relative to the Flask instance folder
     ALLOWED_EXTENSIONS = {}  # TODO: Might use this at some point, probably don't want people to upload any file type
     WTF_CSRF_ENABLED = False  # TODO: I should probably implement this wtforms feature, but it's not a priority
+    # Session security settings
+    SESSION_COOKIE_SECURE = False # Set to True in production with HTTPS
+    SESSION_COOKIE_HTTPONLY = True # Prevent JavaScript access
+    SESSION_COOKIE_SAMESITE = "Lax" # CSRF protection
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30) # Session timeout

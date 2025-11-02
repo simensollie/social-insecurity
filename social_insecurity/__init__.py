@@ -11,14 +11,25 @@ from flask import Flask, current_app
 
 from social_insecurity.config import Config
 from social_insecurity.database import SQLite3
+from social_insecurity.models import User
 
-# from flask_login import LoginManager
+from flask_login import LoginManager
 # from flask_bcrypt import Bcrypt
 # from flask_wtf.csrf import CSRFProtect
 
 sqlite = SQLite3()
-# TODO: Handle login management better, maybe with flask_login?
-# login = LoginManager()
+login = LoginManager()
+
+
+@login.user_loader
+def load_user(user_id):
+    """Load user from database by ID for Flask-Login.
+    
+    This callback uses the SQL schema to fetch user data.
+    """
+    return User.get(int(user_id))
+
+
 # TODO: The passwords are stored in plaintext, this is not secure at all. I should probably use bcrypt or something
 # bcrypt = Bcrypt()
 # TODO: The CSRF protection is not working, I should probably fix that
@@ -36,7 +47,10 @@ def create_app(test_config=None) -> Flask:
     app.jinja_env.autoescape = True
 
     sqlite.init_app(app, schema="schema.sql")
-    # login.init_app(app)
+    login.init_app(app)
+    # Redirect to login page if not authenticated
+    login.login_view = 'index' 
+    login.login_message = 'Please log in to access this page.'
     # bcrypt.init_app(app)
     # csrf.init_app(app)
 
