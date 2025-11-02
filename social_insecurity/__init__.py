@@ -14,12 +14,19 @@ from social_insecurity.database import SQLite3
 from social_insecurity.models import User
 
 from flask_login import LoginManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_limiter.errors import RateLimitExceeded
 # from flask_bcrypt import Bcrypt
 # from flask_wtf.csrf import CSRFProtect
 
 sqlite = SQLite3()
 login = LoginManager()
-
+limiter = Limiter(
+    key_func=get_remote_address,  # Rate limit by IP address
+    default_limits=["200 per day", "50 per hour"],  # Global defaults
+    storage_uri="memory://"  # For production, use Redis: "redis://localhost:6379"
+)
 
 @login.user_loader
 def load_user(user_id):
@@ -51,6 +58,15 @@ def create_app(test_config=None) -> Flask:
     # Redirect to login page if not authenticated
     login.login_view = 'index' 
     login.login_message = 'Please log in to access this page.'
+    limiter.init_app(app)
+    
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit_exceeded(e):
+        """Handle rate limit exceeded errors."""
+        from flask import flash, redirect, url_for
+        flash("Too many login attempts. Please try again in a minute.", category="error")
+        return redirect(url_for("index")), 429
+    
     # bcrypt.init_app(app)
     # csrf.init_app(app)
 

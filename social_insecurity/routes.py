@@ -11,12 +11,13 @@ from flask import flash, redirect, render_template, send_from_directory, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from markupsafe import escape
 
-from social_insecurity import sqlite
+from social_insecurity import sqlite, limiter
 from social_insecurity.forms import CommentsForm, FriendsForm, IndexForm, PostForm, ProfileForm
 from social_insecurity.models import User
 
 @app.route("/", methods=["GET", "POST"])
 @app.route("/index", methods=["GET", "POST"])
+@limiter.limit("5 per minute")  # Allow 5 login attempts per minute per IP
 def index():
     """Provides the index page for the application.
 
@@ -83,7 +84,7 @@ def stream(username: str):
 
     Otherwise, it reads the username from the URL and displays all posts from the user and their friends.
     """
-    # CRITICAL: Verify authenticated user matches requested username (fixes IDOR vulnerability)
+    # Verify authenticated user matches requested username
     if current_user.username != username:
         flash("You don't have permission to access this page.", category="error")
         return redirect(url_for("stream", username=current_user.username))
@@ -126,7 +127,7 @@ def comments(username: str, post_id: int):
 
     Otherwise, it reads the username and post id from the URL and displays all comments for the post.
     """
-    # CRITICAL: Verify authenticated user matches requested username (fixes IDOR vulnerability)
+    # Verify authenticated user matches requested username
     if current_user.username != username:
         flash("You don't have permission to access this page.", category="error")
         return redirect(url_for("stream", username=current_user.username))
@@ -170,7 +171,7 @@ def friends(username: str):
 
     Otherwise, it reads the username from the URL and displays all friends of the user.
     """
-    # CRITICAL: Verify authenticated user matches requested username (fixes IDOR vulnerability)
+    # Verify authenticated user matches requested username
     if current_user.username != username:
         flash("You can only view your own friends list.", category="error")
         return redirect(url_for("friends", username=current_user.username))
@@ -226,7 +227,7 @@ def profile(username: str):
 
     Otherwise, it reads the username from the URL and displays the user's profile.
     """
-    # CRITICAL: Verify authenticated user matches requested username (fixes IDOR vulnerability)
+    # Verify authenticated user matches requested username
     if current_user.username != username:
         flash("You can only edit your own profile.", category="error")
         return redirect(url_for("profile", username=current_user.username))
@@ -240,7 +241,7 @@ def profile(username: str):
     user = sqlite.query(get_user, username, one=True)
 
     if profile_form.is_submitted():
-        # CRITICAL: Double-check authorization before allowing update
+        # Double-check authorization before allowing update
         if current_user.username != username:
             flash("You can only edit your own profile.", category="error")
             return redirect(url_for("profile", username=current_user.username))
