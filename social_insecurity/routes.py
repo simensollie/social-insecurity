@@ -12,6 +12,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from markupsafe import escape
 
 from social_insecurity import sqlite, limiter
+from social_insecurity.password import hash_password, verify_password
 from social_insecurity.forms import CommentsForm, FriendsForm, IndexForm, PostForm, ProfileForm
 from social_insecurity.models import User
 
@@ -40,7 +41,7 @@ def index():
 
         if user is None:
             flash("Sorry, username or password is not correct.", category="warning")
-        elif user["password"] != login_form.password.data:
+        elif not verify_password(login_form.password.data, user["password"]):
             flash("Sorry, username or password is not correct.", category="warning")
         else:
             # Create User object and log them in
@@ -56,11 +57,18 @@ def index():
             return redirect(url_for("stream", username=user['username']))
 
     elif register_form.is_submitted() and register_form.submit.data:
+        # Hash password using Argon2id
+        hashed_password = hash_password(register_form.password.data)
+
         insert_user = """
             INSERT INTO Users (username, first_name, last_name, password)
             VALUES (?, ?, ?, ?);
             """
-        sqlite.query(insert_user, register_form.username.data, register_form.first_name.data, register_form.last_name.data, register_form.password.data)
+        sqlite.query(insert_user, 
+                    register_form.username.data, 
+                    register_form.first_name.data, 
+                    register_form.last_name.data, 
+                    hashed_password)
         flash("User successfully created!", category="success")
         return redirect(url_for("index"))
 
