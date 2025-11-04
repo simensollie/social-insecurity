@@ -2,8 +2,8 @@
 User model for Flask-Login integration.
 """
 
+from flask import current_app
 from flask_login import UserMixin
-from social_insecurity import sqlite
 
 
 class User(UserMixin):
@@ -19,6 +19,8 @@ class User(UserMixin):
     @staticmethod
     def get(user_id):
         """Get a user by ID from the database."""
+        # Access sqlite from Flask app context to avoid circular import
+        sqlite = current_app.extensions['sqlite3']
         user_data = sqlite.query(
             "SELECT * FROM Users WHERE id = ?;", 
             user_id, 
